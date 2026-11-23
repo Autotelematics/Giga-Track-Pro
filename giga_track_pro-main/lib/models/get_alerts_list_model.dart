@@ -1,0 +1,232 @@
+import 'dart:convert';
+
+// JSON helpers
+GetAlertsModel getAlertsModelFromJson(String str) =>
+    GetAlertsModel.fromJson(json.decode(str));
+
+String getAlertsModelToJson(GetAlertsModel data) => json.encode(data.toJson());
+
+// Main model
+class GetAlertsModel {
+  final int status;
+  final int page;
+  final int perPage;
+  final int total;
+  final Map<String, int> counts;
+  final List<Item> items;
+  final dynamic message;
+
+  GetAlertsModel({
+    required this.status,
+    required this.page,
+    required this.perPage,
+    required this.total,
+    required this.counts,
+    required this.items,
+    required this.message,
+  });
+
+  factory GetAlertsModel.fromJson(Map<String, dynamic> json) => GetAlertsModel(
+    status: json["status"] ?? 0,
+    page: json["page"] ?? 1,
+    perPage: json["per_page"] ?? 10,
+    total: json["total"] ?? 0,
+    counts: _parseCounts(json["counts"]),
+    items: _parseItems(json["items"]),
+    message: json["message"],
+  );
+
+  Map<String, dynamic> toJson() => {
+    "status": status,
+    "page": page,
+    "per_page": perPage,
+    "total": total,
+    "counts": counts,
+    "items": List<dynamic>.from(items.map((x) => x.toJson())),
+    "message": message,
+  };
+
+  /// Copy with support for updating specific fields
+  GetAlertsModel copyWith({
+    int? status,
+    int? page,
+    int? perPage,
+    int? total,
+    Map<String, int>? counts,
+    List<Item>? items,
+    dynamic message,
+  }) =>
+      GetAlertsModel(
+        status: status ?? this.status,
+        page: page ?? this.page,
+        perPage: perPage ?? this.perPage,
+        total: total ?? this.total,
+        counts: counts ?? this.counts,
+        items: items ?? this.items,
+        message: message ?? this.message,
+      );
+}
+Map<String, int> _parseCounts(dynamic raw) {
+  if (raw is! Map) return <String, int>{};
+  final parsed = <String, int>{};
+  raw.forEach((key, value) {
+    final k = key.toString();
+    if (k.isEmpty) return;
+
+    // Parse the value to int
+    if (value is int) {
+      parsed[k] = value;
+      return;
+    }
+    if (value is num) {
+      parsed[k] = value.toInt();
+      return;
+    }
+    parsed[k] = int.tryParse(value.toString()) ?? 0;
+  });
+  return parsed;
+}
+
+/// Parse items list from API response
+List<Item> _parseItems(dynamic raw) {
+  if (raw is! List) return <Item>[];
+  return raw
+      .whereType<Map<String, dynamic>>()
+      .map(Item.fromJson)
+      .toList();
+}
+
+// Item/Alert model
+class Item {
+  final int id;
+  final String type;
+  final DateTime? time;
+  final String message;
+  final String address;
+  final int course;
+  final double latitude;
+  final double longitude;
+  final int speed;
+  final String detail;
+  final dynamic geofence;
+  final String deviceName;
+  final int deviceId;
+
+  Item({
+    required this.id,
+    required this.type,
+    required this.time,
+    required this.message,
+    required this.address,
+    required this.course,
+    required this.latitude,
+    required this.longitude,
+    required this.speed,
+    required this.detail,
+    required this.geofence,
+    required this.deviceName,
+    required this.deviceId,
+  });
+
+  factory Item.fromJson(Map<String, dynamic> json) => Item(
+    id: json["id"] ?? 0,
+    type: json["type"] ?? "",
+    time: json["time"] != null ? DateTime.tryParse(json["time"]) : null,
+    message: json["message"] ?? "",
+    address: json["address"] ?? "",
+    course: json["course"] ?? 0,
+    latitude: (json["latitude"] as num?)?.toDouble() ?? 0.0,
+    longitude: (json["longitude"] as num?)?.toDouble() ?? 0.0,
+    speed: json["speed"] ?? 0,
+    detail: json["detail"] ?? "",
+    geofence: json["geofence"],
+    deviceName: json['device_name'] ?? '',
+    deviceId: json["device_id"] ?? 0,
+  );
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "type": type,
+    "time": time?.toIso8601String(),
+    "message": message,
+    "address": address,
+    "course": course,
+    "latitude": latitude,
+    "longitude": longitude,
+    "speed": speed,
+    "detail": detail,
+    "geofence": geofence,
+    "device_name": deviceName,
+    "device_id": deviceId,
+  };
+
+  /// Copy with support for updating specific fields
+  Item copyWith({
+    int? id,
+    String? type,
+    DateTime? time,
+    String? message,
+    String? address,
+    int? course,
+    double? latitude,
+    double? longitude,
+    int? speed,
+    String? detail,
+    dynamic geofence,
+    String? deviceName,
+    int? deviceId,
+  }) =>
+      Item(
+        id: id ?? this.id,
+        type: type ?? this.type,
+        time: time ?? this.time,
+        message: message ?? this.message,
+        address: address ?? this.address,
+        course: course ?? this.course,
+        latitude: latitude ?? this.latitude,
+        longitude: longitude ?? this.longitude,
+        speed: speed ?? this.speed,
+        detail: detail ?? this.detail,
+        geofence: geofence ?? this.geofence,
+        deviceName: deviceName ?? this.deviceName,
+        deviceId: deviceId ?? this.deviceId,
+      );
+}
+
+/// Legacy Counts class (optional, for backward compatibility)
+/// The main GetAlertsModel now uses Map<String, int> directly
+class Counts {
+  final int offlineDuration;
+  final int ignitionDuration;
+  final int idleDuration;
+  final int moveStart;
+  final int overParking;
+  final int overSpeed;
+
+  Counts({
+    required this.offlineDuration,
+    required this.ignitionDuration,
+    required this.idleDuration,
+    required this.moveStart,
+    required this.overParking,
+    required this.overSpeed,
+  });
+
+  factory Counts.fromJson(Map<String, dynamic> json) => Counts(
+    offlineDuration: json["Offline duration"] ?? 0,
+    ignitionDuration: json["Ignition duration"] ?? 0,
+    idleDuration: json["Idle Duration"] ?? 0,
+    moveStart: json["Move Start"] ?? 0,
+    overParking: json["Over Parking"] ?? 0,
+    overSpeed: json["Over Speed"] ?? 0,
+  );
+
+  Map<String, dynamic> toJson() => {
+    "Offline duration": offlineDuration,
+    "Ignition duration": ignitionDuration,
+    "Idle Duration": idleDuration,
+    "Move Start": moveStart,
+    "Over Parking": overParking,
+    "Over Speed": overSpeed,
+  };
+}
